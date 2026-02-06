@@ -1,0 +1,56 @@
+import cv2
+import matplotlib.pyplot as plt
+
+# -------------------------------
+# Function to display images
+# -------------------------------
+def show_image(img, title, cmap=None):
+    plt.imshow(img, cmap=cmap)
+    plt.title(title)
+    plt.axis("off")
+
+# -------------------------------
+# Load image
+# -------------------------------
+image_path = "/content/download.jpg"
+image = cv2.imread(image_path)
+
+if image is None:
+    print("Image not found! Check the path.")
+else:
+    # Convert BGR → RGB
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Convert to Grayscale
+    grayscale = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+
+    # Flip image horizontally
+    flipped = cv2.flip(rgb, 1)
+
+    # Rotate using affine transform (45 degrees)
+    h, w = rgb.shape[:2]
+    center = (w // 2, h // 2)
+    matrix = cv2.getRotationMatrix2D(center, 45, 1.0)
+    rotated = cv2.warpAffine(rgb, matrix, (w, h))
+
+    # Edge detection using Sobel
+    sobel_x = cv2.Sobel(grayscale, cv2.CV_64F, 1, 0, ksize=3)
+    sobel_y = cv2.Sobel(grayscale, cv2.CV_64F, 0, 1, ksize=3)
+    edges = cv2.magnitude(sobel_x, sobel_y)
+
+    # -------------------------------
+    # Display all results
+    # -------------------------------
+    plt.figure(figsize=(16, 8))
+
+    plt.subplot(2,3,1)
+    show_image(rgb, "Original (RGB)")
+
+    plt.subplot(2,3,2)
+    show_image(grayscale, "Grayscale", cmap="gray")
+
+    plt.subplot(2,3,3)
+    show_image(flipped, "Flipped Image")
+
+    plt.tight_layout()
+    plt.show()
