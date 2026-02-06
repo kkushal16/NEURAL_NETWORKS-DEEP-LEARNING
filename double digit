@@ -1,0 +1,88 @@
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import matplotlib.pyplot as plt
+
+# Load MNIST dataset
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+
+# Normalize images
+x_train = x_train.astype("float32") / 255.0
+x_test = x_test.astype("float32") / 255.0
+
+# Create double-digit images
+def create_double_digit(images, labels):
+    X, y1, y2 = [], [], []
+
+    for i in range(len(images)):
+        j = np.random.randint(len(images))
+        img = np.concatenate([images[i], images[j]], axis=1)
+        X.append(img)
+        y1.append(labels[i])
+        y2.append(labels[j])
+
+    X = np.array(X)[..., np.newaxis]
+    return X, np.array(y1), np.array(y2)
+
+# Generate data
+X_train, y_left_train, y_right_train = create_double_digit(x_train, y_train)
+X_test, y_left_test, y_right_test = create_double_digit(x_test, y_test)
+
+# Build CNN model
+inputs = layers.Input(shape=(28, 56, 1))
+
+x = layers.Conv2D(32, (3, 3), activation='relu')(inputs)
+x = layers.MaxPooling2D((2, 2))(x)
+
+x = layers.Conv2D(64, (3, 3), activation='relu')(x)
+x = layers.MaxPooling2D((2, 2))(x)
+
+x = layers.Flatten()(x)
+x = layers.Dense(128, activation='relu')(x)
+
+left_output = layers.Dense(10, activation='softmax', name='left_digit')(x)
+right_output = layers.Dense(10, activation='softmax', name='right_digit')(x)
+
+model = models.Model(inputs=inputs, outputs=[left_output, right_output])
+
+# Compile model
+model.compile(
+    optimizer='adam',
+    loss={
+        'left_digit': 'sparse_categorical_crossentropy',
+        'right_digit': 'sparse_categorical_crossentropy'
+    },
+    metrics={
+        'left_digit': 'accuracy',
+        'right_digit': 'accuracy'
+    }
+)
+
+# Train model
+model.fit(
+    X_train,
+    {
+        'left_digit': y_left_train,
+        'right_digit': y_right_train
+    },
+    epochs=5,
+    batch_size=64,
+    validation_split=0.1
+)
+
+# Test a sample
+idx = 0
+image = X_test[idx:idx+1]
+
+pred_left, pred_right = model.predict(image)
+
+d1 = np.argmax(pred_left)
+d2 = np.argmax(pred_right)
+
+predicted_digit = d1 * 10 + d2
+
+# Display result
+plt.imshow(image[0].squeeze(), cmap='gray')
+plt.title(f"Predicted Digit: {predicted_digit}")
+plt.axis('off')
+plt.show()
