@@ -1,0 +1,54 @@
+import cv2
+import numpy as np
+from ultralytics import YOLO
+from google.colab import files
+from google.colab.patches import cv2_imshow
+
+# ---------------- UPLOAD IMAGE ----------------
+image_path = "/content/download 3.jpg"
+
+# ---------------- LOAD IMAGE ----------------
+image = cv2.imread(image_path)
+if image is None:
+    raise RuntimeError("Failed to load image")
+
+# ---------------- LOAD YOLOv8 POSE MODEL ----------------
+model = YOLO("yolov8n-pose.pt")
+
+# ---------------- RUN POSE DETECTION ----------------
+results = model(image, conf=0.3)
+
+# ---------------- SKELETON CONNECTIONS ----------------
+skeleton = [
+    (5, 7), (7, 9),     # Left arm
+    (6, 8), (8,10),     # Right arm
+    (5, 6),             # Shoulders
+    (5,11), (6,12),     # Torso
+    (11,13), (13,15),   # Left leg
+    (12,14), (14,16)    # Right leg
+]
+
+# ---------------- DRAW POSE ----------------
+for result in results:
+    if result.keypoints is None:
+        continue
+
+    keypoints = result.keypoints.xy[0].cpu().numpy()
+
+    # Draw joints
+    for x, y in keypoints:
+        cv2.circle(image, (int(x), int(y)), 5, (0, 255, 0), -1)
+
+    # Draw skeleton
+    for start, end in skeleton:
+        x1, y1 = keypoints[start]
+        x2, y2 = keypoints[end]
+        cv2.line(            image,
+            (int(x1), int(y1)),
+            (int(x2), int(y2)),
+            (255, 0, 0),
+            2
+        )
+
+# ---------------- DISPLAY OUTPUT ----------------
+cv2_imshow(image)
