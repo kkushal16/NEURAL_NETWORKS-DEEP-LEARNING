@@ -1,0 +1,54 @@
+import tensorflow as tf
+import numpy as np
+# Training data (XOR)
+X = np.array([
+    [0, 0],
+    [0, 1],
+    [1, 0],
+    [1, 1]
+], dtype=np.float32)
+
+y = np.array([[0], [1], [1], [0]], dtype=np.float32)
+# Initialize parameters
+tf.random.set_seed(42)
+
+W1 = tf.Variable(tf.random.normal([2, 2]))
+b1 = tf.Variable(tf.zeros([2]))
+
+W2 = tf.Variable(tf.random.normal([2, 1]))
+b2 = tf.Variable(tf.zeros([1]))
+
+lr = 0.1
+epochs = 5000
+
+# -----------------------------
+# Training loop (Backprop)
+# -----------------------------
+for epoch in range(epochs):
+    with tf.GradientTape() as tape:
+
+        # Forward propagation
+        z1 = tf.matmul(X, W1) + b1
+        a1 = tf.sigmoid(z1)
+
+        z2 = tf.matmul(a1, W2) + b2
+        y_hat = tf.sigmoid(z2)
+
+        # Loss (Mean Squared Error)
+        loss = tf.reduce_mean(tf.square(y - y_hat))
+
+    # Backpropagation (automatic differentiation)
+    gradients = tape.gradient(loss, [W1, b1, W2, b2])
+
+    # Gradient Descent update
+    W1.assign_sub(lr * gradients[0])
+    b1.assign_sub(lr * gradients[1])
+    W2.assign_sub(lr * gradients[2])
+    b2.assign_sub(lr * gradients[3])
+
+    if epoch % 1000 == 0:
+        print(f"Epoch {epoch}, Loss: {loss.numpy():.4f}")
+
+# Final prediction
+print("\nPredictions:")
+print(tf.round(y_hat).numpy())
